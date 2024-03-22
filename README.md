@@ -1,0 +1,2 @@
+# nail and string art replicator
+ Nail & String Art Replicator is a collection of code dedicated to mimicking images using the nail and string art technique. Inspired by the craft where artists connect nails on a board with strings to create intricate designs, this repository employs a genetic algorithm. By determining various points around a circle and assigning them numbers, the algorithm intelligently sequences the connections between these points, striving to produce the most faithful replica of the given image.
