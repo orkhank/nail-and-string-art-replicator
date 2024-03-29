@@ -47,22 +47,6 @@ def cosine_similarity(image1, image2) -> float:
     """
 
     assert image1.shape == image2.shape
-    # normalized_image1 = image1 / 255
-    # normalized_image2 = image2 / 255
-
-    # cross_correlation = np.sum(
-    #     (normalized_image1 - np.mean(normalized_image1))
-    #     * (normalized_image2 - np.mean(normalized_image2))
-    # ) / (
-    #     np.sqrt(
-    #         np.sum((normalized_image1 - np.mean(normalized_image1)) ** 2)
-    #         * np.sum((normalized_image2 - np.mean(normalized_image2)) ** 2)
-    #     )
-    #     + 1e-10
-    # )
-    # # Normalize to [0, 1]
-    # cross_correlation = (cross_correlation + 1) / 2
-    # return cross_correlation
 
     a, b, c = get_a_b_c(image1, image2)
     return c / np.sqrt(a * b)
