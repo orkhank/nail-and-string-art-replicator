@@ -150,13 +150,12 @@ class DNA:
         return cls.points[name]
 
     def visualize(self, title: str = "DNA", wait: int = 0):
-        # create the image with lines
-        image_with_lines = self.get_image_with_lines()
-
         # show the image
-        cv.imshow(title, image_with_lines)
-        cv.waitKey(wait)
-        cv.destroyAllWindows()
+        plt.imshow(self.get_image_with_lines(), cmap="gray")
+        plt.title(title)
+        plt.show(block=False)
+        plt.pause(wait / 1000)
+        plt.close()
 
 
 def get_args() -> argparse.Namespace:
@@ -309,7 +308,9 @@ def train(
         # print the fitness of the best DNA object
         if generation % 100 == 0:
             print(f"\nGeneration: {generation}, Fitness: {best_dna.fitness()}")
-            best_dna.visualize(f"Generation {generation}", wait=500)
+            best_dna.visualize(
+                f"Generation {generation}, Fitness: {best_dna.fitness()}", wait=500
+            )
 
     return best_dnas, fitness_over_time
 
@@ -343,10 +344,10 @@ def main():
     for point in points.values():
         cv.circle(image_with_points, point, 1, (0, 0, 0), 1)
 
-    # show the image
-    cv.imshow("Nail and String Art", image_with_points)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+    # show the image on a plot
+    plt.imshow(image_with_points, cmap="gray")
+    plt.title("Image with Points")
+    plt.show()
 
     print("Training the model...")
     # set the fitness function and mutation rate
