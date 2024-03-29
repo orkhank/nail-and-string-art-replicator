@@ -1,3 +1,4 @@
+# TODO: clean up the code and COMMENTS
 import argparse
 from pathlib import Path
 from typing import Callable, Optional, Union
@@ -7,11 +8,15 @@ from tqdm import tqdm
 from matplotlib import pyplot as plt
 import time
 from utils import (
-    cross_correlation,
-    mean_match,
+    simple_matching_coefficient,
+    cosine_similarity,
+    jaccard_similarity,
+    dice_similarity,
+    manhattan_similarity,
+    euclidean_similarity,
     mean_squared_error,
-    structural_similarity,
-    peak_signal_noise_ratio,
+    # structural_similarity,
+    # peak_signal_noise_ratio,
     get_points_on_circle,
     read_binary_image,
 )
@@ -19,11 +24,15 @@ from utils import (
 
 class DNA:
     fitness_function_dict: dict[str, Callable] = {
-        "ssd": mean_match,
+        "smc": simple_matching_coefficient,
+        "jaccard": jaccard_similarity,
+        "dice": dice_similarity,
+        "manhattan": manhattan_similarity,  # shit
+        "euclidian": euclidean_similarity,
         "mse": mean_squared_error,
-        "crco": cross_correlation,
-        "ssim": structural_similarity,
-        "psnr": peak_signal_noise_ratio,
+        "crco": cosine_similarity,
+        # "ssim": structural_similarity,
+        # "psnr": peak_signal_noise_ratio,
     }
     fitness_function_name: Union[str, None] = None
     mutation_rate: Union[float, None] = None
@@ -327,8 +336,7 @@ def visualize_fitness(
     plt.ylabel(f"Fitness ({loss_function})")
     plt.grid()
     plt.tight_layout()
-    plt.show()
-    return plt
+    return plt.gcf()
 
 
 def main():
@@ -388,6 +396,10 @@ def main():
         fitness_over_time,
         args.loss_function,
     )
+    # show the plot
+    plt.show()
+
+    # save the fitness plot
     fitness_plot_path = Path("outputs") / (
         Path(args.image_path).stem
         + f"_fitness_r{args.radius}_s{args.sequence_length}_p{args.population_size}_g{args.generations}_k{args.keep_percentile}_m{args.mutation_rate}_l{args.loss_function}.png"
