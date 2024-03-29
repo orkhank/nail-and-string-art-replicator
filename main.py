@@ -5,6 +5,7 @@ import cv2 as cv
 import numpy as np
 from tqdm import tqdm
 from matplotlib import pyplot as plt
+import time
 from utils import (
     cross_correlation,
     mean_match,
@@ -315,12 +316,19 @@ def train(
     return best_dnas, fitness_over_time
 
 
-def visualize_fitness(fitness_over_time):
+def visualize_fitness(
+    title: str,
+    fitness_over_time: list[float],
+    loss_function: str,
+):
     plt.plot(fitness_over_time)
-    plt.title("Fitness Over Generations")
+    plt.title(title)
     plt.xlabel("Generation")
-    plt.ylabel("Fitness")
+    plt.ylabel(f"Fitness ({loss_function})")
+    plt.grid()
+    plt.tight_layout()
     plt.show()
+    return plt
 
 
 def main():
@@ -354,6 +362,7 @@ def main():
     DNA.init_params(args.loss_function, args.mutation_rate, points)
 
     # train the model
+    start_time = time.time()
     best_dnas, fitness_over_time = train(
         points,
         args.population_size,
@@ -362,16 +371,29 @@ def main():
         args.sequence_length,
         image,
     )
+    end_time = time.time()
+    train_time = end_time - start_time
+    print(f"Training time: {train_time:.2f} seconds")
 
     # show the best DNA
     best_dna = best_dnas[-1]
-    best_dna.visualize("Best DNA", wait=0)
+    best_dna.visualize(f"Best Sequence (Fitness: {best_dna.fitness()})", wait=0)
 
     # print details of the best DNA
     print(f"Best sequence found (fitness: {best_dna.fitness()}): {best_dna.sequence}")
 
     # visualize the fitness over generations
-    visualize_fitness(fitness_over_time)
+    fitness_plot = visualize_fitness(
+        f"Fitness over {args.generations} generations.",
+        fitness_over_time,
+        args.loss_function,
+    )
+    fitness_plot_path = Path("outputs") / (
+        Path(args.image_path).stem
+        + f"_fitness_r{args.radius}_s{args.sequence_length}_p{args.population_size}_g{args.generations}_k{args.keep_percentile}_m{args.mutation_rate}_l{args.loss_function}.png"
+    )
+    fitness_plot.savefig(fitness_plot_path)
+    print(f"Fitness plot saved at {fitness_plot_path}")
 
     # save the binary image
     output_path = args.output or Path("outputs") / (
