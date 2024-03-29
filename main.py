@@ -286,11 +286,13 @@ def train(
         points, population_size, sequence_length, target_image
     )
 
+    # create the probabilities for selection
     probabilities = np.linspace(1, 0, population_size) / np.sum(
         np.linspace(1, 0, population_size)
     )
     keep_index = int(population_size * keep_percentile / 100)
     dropout_index = population_size - keep_index
+    crossover_count = dropout_index // 2 + 1
 
     best_dnas = []
     fitness_over_time = []
@@ -301,7 +303,7 @@ def train(
         # create the next generation
         next_generation = []
         # create the next generation
-        for _ in range(dropout_index // 2):
+        for _ in range(crossover_count):
             # select two parents
             parent1 = np.random.choice(population, p=probabilities)
             parent2 = np.random.choice(population, p=probabilities)
@@ -316,8 +318,8 @@ def train(
             next_generation.extend([child1, child2])
 
         # keep the top keep_percentile % of the population
-        population = population[: int(population_size * keep_percentile / 100)]
-        population.extend(next_generation)
+        population = population[:keep_index]
+        population.extend(next_generation[:dropout_index])
 
         # sanity check
         assert (
