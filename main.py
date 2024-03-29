@@ -1,5 +1,4 @@
 import argparse
-import math
 from pathlib import Path
 from typing import Callable, Optional, Union
 import cv2 as cv
@@ -12,6 +11,8 @@ from utils import (
     mean_squared_error,
     structural_similarity,
     peak_signal_noise_ratio,
+    get_points_on_circle,
+    read_binary_image,
 )
 
 
@@ -158,20 +159,6 @@ class DNA:
         cv.destroyAllWindows()
 
 
-def get_points_on_circle(
-    center: tuple[int, int], radius: int, num_points: int = 360
-) -> dict[int, tuple[int, int]]:
-    points = []
-    for i in range(num_points):
-        angle = 2 * np.pi * i / num_points
-        x = center[0] + radius * np.cos(angle)
-        y = center[1] + radius * np.sin(angle)
-        points.append((int(x), int(y)))
-
-    named_points = {i + 1: point for i, point in enumerate(points)}
-    return named_points
-
-
 def get_args() -> argparse.Namespace:
     default_sequence_length = 50
     default_population_size = 100
@@ -247,18 +234,6 @@ def get_args() -> argparse.Namespace:
     )
 
     return parser.parse_args()
-
-
-def read_binary_image(image_path: str) -> np.ndarray:
-    original_image = cv.imread(image_path)
-    if original_image is None:
-        print("Image not found")
-        exit()
-
-    gray = cv.cvtColor(original_image, cv.COLOR_BGR2GRAY)
-    _, binary_image = cv.threshold(gray, 127, 255, cv.THRESH_BINARY)
-
-    return binary_image
 
 
 def get_initial_population(points, population_size, sequence_length, target_image):
