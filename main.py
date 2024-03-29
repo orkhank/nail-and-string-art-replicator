@@ -10,13 +10,7 @@ import time
 from utils import (
     simple_matching_coefficient,
     cosine_similarity,
-    jaccard_similarity,
     dice_similarity,
-    manhattan_similarity,
-    euclidean_similarity,
-    mean_squared_error,
-    # structural_similarity,
-    # peak_signal_noise_ratio,
     get_points_on_circle,
     read_binary_image,
 )
@@ -25,14 +19,8 @@ from utils import (
 class DNA:
     fitness_function_dict: dict[str, Callable] = {
         "smc": simple_matching_coefficient,
-        "jaccard": jaccard_similarity,
         "dice": dice_similarity,
-        "manhattan": manhattan_similarity,  # shit
-        "euclidian": euclidean_similarity,
-        "mse": mean_squared_error,
         "crco": cosine_similarity,
-        # "ssim": structural_similarity,
-        # "psnr": peak_signal_noise_ratio,
     }
     fitness_function_name: Union[str, None] = None
     mutation_rate: Union[float, None] = None
