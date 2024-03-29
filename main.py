@@ -331,6 +331,7 @@ def train(
         best_dnas.append(best_dna)
         fitness_over_time.append(best_dna.fitness())
 
+        # print the fitness of the best DNA object
         if generation % 100 == 0:
             print(f"\nGeneration: {generation}, Fitness: {best_dna.fitness()}")
             best_dna.visualize(f"Generation {generation}", wait=500)
@@ -387,24 +388,23 @@ def main():
     )
 
     # show the best DNA
-    best_dnas[-1].visualize("Best DNA")
+    best_dna = best_dnas[-1]
+    best_dna.visualize("Best DNA", wait=0)
+
+    # print details of the best DNA
+    print(f"Best sequence found (fitness: {best_dna.fitness()}): {best_dna.sequence}")
 
     # visualize the fitness over generations
     visualize_fitness(fitness_over_time)
 
-    print("Saving the output...")
     # save the binary image
-    if args.output:
-        cv.imwrite(args.output, best_dnas[-1].get_image_with_lines())
-    else:
-        # generate the filename based on the arguments
-        filename = (
-            Path(args.image_path).stem
-            + f"_r{args.radius}_s{args.sequence_length}_p{args.population_size}_g{args.generations}_k{args.keep_percentile}_m{args.mutation_rate}_l{args.loss_function}.png"
-        )
-        output_path = Path("outputs") / filename
+    output_path = args.output or Path("outputs") / (
+        Path(args.image_path).stem
+        + f"_r{args.radius}_s{args.sequence_length}_p{args.population_size}_g{args.generations}_k{args.keep_percentile}_m{args.mutation_rate}_l{args.loss_function}.png"
+    )
 
-        cv.imwrite(str(output_path), best_dnas[-1].get_image_with_lines())
+    cv.imwrite(str(output_path), best_dna.get_image_with_lines())
+    print(f"Output image saved at {output_path}")
 
 
 if __name__ == "__main__":
