@@ -1,4 +1,6 @@
 import argparse
+import math
+from pathlib import Path
 from typing import Callable, Optional, Union
 import cv2 as cv
 import numpy as np
@@ -146,6 +148,15 @@ class DNA:
         assert cls.points is not None, "Points are not set"
         return cls.points[name]
 
+    def visualize(self, title: str = "DNA", wait: int = 0):
+        # create the image with lines
+        image_with_lines = self.get_image_with_lines()
+
+        # show the image
+        cv.imshow(title, image_with_lines)
+        cv.waitKey(wait)
+        cv.destroyAllWindows()
+
 
 def get_points_on_circle(
     center: tuple[int, int], radius: int, num_points: int = 360
@@ -166,7 +177,7 @@ def get_args() -> argparse.Namespace:
     default_population_size = 100
     default_mutation_rate = 0.01
     default_number_of_generations = 1000
-    default_loss_function = "ssd"
+    default_loss_function = "crco"
     default_keep_percentile = 50
     parser = argparse.ArgumentParser(
         prog="Nail and String Art",
@@ -250,12 +261,12 @@ def read_binary_image(image_path: str) -> np.ndarray:
     return binary_image
 
 
-def visualize_population(points, population, target_image):
-    for dna in population:
-        image_with_lines = dna.get_image_with_lines()
-        cv.imshow("Population", image_with_lines)
-        cv.waitKey(500)  # Adjust display time as needed
-    cv.destroyAllWindows()
+def get_initial_population(points, population_size, sequence_length, target_image):
+    initial_population = []
+    for _ in range(population_size):
+        random_sequence = np.random.choice(list(points.keys()), sequence_length)
+        initial_population.append(DNA(random_sequence, target_image))
+    return initial_population
 
 
 def train(
@@ -266,38 +277,34 @@ def train(
     sequence_length: int,
     target_image: np.ndarray,
 ):
-    fitness_over_time = []
     assert (
         len(points) >= sequence_length
     ), "Number of points should be greater than or equal to the sequence length"
+
     # create the initial population
-    initial_population = []
-    for _ in range(population_size):
-        # create a random sequence
-        random_sequence = np.random.choice(list(points.keys()), sequence_length)
+    population = get_initial_population(
+        points, population_size, sequence_length, target_image
+    )
 
-        # create a DNA object
-        initial_population.append(DNA(random_sequence, target_image))
+    probabilities = np.linspace(1, 0, population_size) / np.sum(
+        np.linspace(1, 0, population_size)
+    )
+    keep_index = int(population_size * keep_percentile / 100)
+    dropout_index = population_size - keep_index
 
-    population: list[DNA] = initial_population.copy()
-
+    best_dnas = []
+    fitness_over_time = []
     for generation in tqdm(range(generations), desc=f"Training", unit="generation"):
-        # calculate the fitness of each DNA object
-        fitness_values = np.array([dna.fitness() for dna in population])
-        normalized_fitness_values = fitness_values / np.sum(fitness_values)
-
         # sort the population based on fitness
         population.sort(key=lambda dna: dna.fitness(), reverse=True)
 
-        # get the top 50% of the population
-        top_population = population[: int(keep_percentile * population_size) // 100]
-
         # create the next generation
         next_generation = []
-        for _ in range(population_size // 2):
+        # create the next generation
+        for _ in range(dropout_index // 2):
             # select two parents
-            parent1 = np.random.choice(population, p=normalized_fitness_values)  # type: ignore
-            parent2 = np.random.choice(population, p=normalized_fitness_values)  # type: ignore
+            parent1 = np.random.choice(population, p=probabilities)
+            parent2 = np.random.choice(population, p=probabilities)
 
             # crossover
             child1, child2 = DNA.crossover(parent1, parent2)
@@ -308,18 +315,25 @@ def train(
 
             next_generation.extend([child1, child2])
 
-        # replace the bottom 50% of the population with the next generation
-        population = top_population + next_generation
+        # keep the top keep_percentile % of the population
+        population = population[: int(population_size * keep_percentile / 100)]
+        population.extend(next_generation)
+
+        # sanity check
+        assert (
+            len(population) == population_size
+        ), f"Population size is not correct: {len(population)} != {population_size}"
 
         # store the fitness of the best DNA object
-        best_dna = max(population, key=lambda dna: dna.fitness())
+        best_dna: DNA = max(population, key=lambda dna: dna.fitness())
+        best_dnas.append(best_dna)
         fitness_over_time.append(best_dna.fitness())
 
         if generation % 100 == 0:
-            print(f"Generation: {generation}, Fitness: {best_dna.fitness()}")
-            visualize_population(points, [best_dna], target_image)
+            print(f"\nGeneration: {generation}, Fitness: {best_dna.fitness()}")
+            best_dna.visualize(f"Generation {generation}", wait=500)
 
-    return population, fitness_over_time
+    return best_dnas, fitness_over_time
 
 
 def visualize_fitness(fitness_over_time):
@@ -334,6 +348,8 @@ def main():
     np.random.seed(42)
     args = get_args()
 
+    print(args)
+    print("Reading the image...")
     # Read the image as binary black and white
     image = read_binary_image(args.image_path)
 
@@ -354,11 +370,12 @@ def main():
     cv.waitKey(0)
     cv.destroyAllWindows()
 
+    print("Training the model...")
     # set the fitness function and mutation rate
     DNA.init_params(args.loss_function, args.mutation_rate, points)
 
     # train the model
-    population, fitness_over_time = train(
+    best_dnas, fitness_over_time = train(
         points,
         args.population_size,
         args.generations,
@@ -367,22 +384,25 @@ def main():
         image,
     )
 
-    # get the best DNA object
-    best_dna = max(population, key=lambda dna: dna.fitness())
-
-    # show the best DNA object
-    image_with_lines = best_dna.get_image_with_lines()
-    cv.imshow("Best DNA", image_with_lines)
-    cv.imshow("Target Image", image)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+    # show the best DNA
+    best_dnas[-1].visualize("Best DNA")
 
     # visualize the fitness over generations
     visualize_fitness(fitness_over_time)
 
+    print("Saving the output...")
     # save the binary image
     if args.output:
-        cv.imwrite(args.output, image_with_lines)
+        cv.imwrite(args.output, best_dnas[-1].get_image_with_lines())
+    else:
+        # generate the filename based on the arguments
+        filename = (
+            Path(args.image_path).stem
+            + f"_r{args.radius}_s{args.sequence_length}_p{args.population_size}_g{args.generations}_k{args.keep_percentile}_m{args.mutation_rate}_l{args.loss_function}.png"
+        )
+        output_path = Path("outputs") / filename
+
+        cv.imwrite(str(output_path), best_dnas[-1].get_image_with_lines())
 
 
 if __name__ == "__main__":

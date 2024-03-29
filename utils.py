@@ -8,15 +8,15 @@ from skimage.metrics import (
 def mean_match(image1, image2) -> float:
     assert image1.shape == image2.shape
 
-    mean_matches = np.mean(np.logical_not(np.logical_xor(image1, image2)))
-    return mean_matches
+    mean_mismatches = np.mean(np.logical_xor(image1, image2))
+    return 1 - mean_mismatches  # Normalize to [0, 1]
 
 
 def mean_squared_error(image1, image2) -> float:
     assert image1.shape == image2.shape
 
     mse = np.sqrt(np.mean(np.square(image1 - image2)))
-    return mse / 255  # Normalize to [0, 1]
+    return 1 - mse / 255  # Normalize to [0, 1]
 
 
 def cross_correlation(image1, image2) -> float:
