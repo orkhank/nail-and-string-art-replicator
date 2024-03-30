@@ -394,16 +394,21 @@ def main():
     # save the fitness plot
     fitness_plot_path = Path("outputs") / (
         Path(args.image_path).stem
-        + f"_fitness_r{args.radius}_s{args.sequence_length}_p{args.population_size}_g{args.generations}_k{args.keep_percentile}_m{args.mutation_rate}_l{args.fitness_function}.png"
+        + f"_fitness_r{args.radius}_s{args.sequence_length}_p{args.population_size}_g{args.generations}_k{args.keep_percentile}_m{args.mutation_rate}_f{args.fitness_function}.png"
     )
+    # make the directory if it does not exist
+    fitness_plot_path.parent.mkdir(parents=True, exist_ok=True)
     fitness_plot.savefig(fitness_plot_path)
     print(f"Fitness plot saved at {fitness_plot_path}")
 
     # save the binary image
     output_path = args.output or Path("outputs") / (
         Path(args.image_path).stem
-        + f"_r{args.radius}_s{args.sequence_length}_p{args.population_size}_g{args.generations}_k{args.keep_percentile}_m{args.mutation_rate}_l{args.fitness_function}.png"
+        + f"_r{args.radius}_s{args.sequence_length}_p{args.population_size}_g{args.generations}_k{args.keep_percentile}_m{args.mutation_rate}_f{args.fitness_function}.png"
     )
+
+    # make the directory if it does not exist
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     cv.imwrite(str(output_path), best_dna.get_image_with_lines())
     print(f"Output image saved at {output_path}")
