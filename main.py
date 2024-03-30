@@ -20,7 +20,12 @@ class DNA:
     fitness_function_dict: dict[str, Callable] = {
         "smc": simple_matching_coefficient,
         "dice": dice_similarity,
-        "crco": cosine_similarity,
+        "cosine": cosine_similarity,
+    }
+    fitness_function_long_names: dict[str, str] = {
+        "smc": "Simple Matching Coefficient",
+        "dice": "Dice Similarity",
+        "cosine": "Cosine Similarity",
     }
     fitness_function_name: Union[str, None] = None
     mutation_rate: Union[float, None] = None
@@ -161,7 +166,7 @@ def get_args() -> argparse.Namespace:
     default_population_size = 100
     default_mutation_rate = 0.01
     default_number_of_generations = 1000
-    default_loss_function = "crco"
+    default_fitness_function = "cosine"
     default_keep_percentile = 50
     parser = argparse.ArgumentParser(
         prog="Nail and String Art",
@@ -220,14 +225,13 @@ def get_args() -> argparse.Namespace:
         help=f"Which percentile of the population to keep for the next generation. Default is {default_keep_percentile}.",
     )
     parser.add_argument(
-        "-l",
-        "--loss_function",
+        "-f",
+        "--fitness_function",
         type=str,
-        choices=DNA.fitness_function_dict.keys(),
-        default=default_loss_function,
-        help="The loss function to use. "
-        # TODO: automatically get the list of available loss functions and display them here
-        "Default is ssd.",
+        default=default_fitness_function,
+        help="The fitness function to use. "
+        f"Options are: {', '.join([f'{k} ({v})' for k, v in DNA.fitness_function_long_names.items()])}. "
+        f"Default is {default_fitness_function}.",
     )
 
     return parser.parse_args()
@@ -316,12 +320,12 @@ def train(
 def visualize_fitness(
     title: str,
     fitness_over_time: list[float],
-    loss_function: str,
+    fitness_function_name: str,
 ):
     plt.plot(fitness_over_time)
     plt.title(title)
     plt.xlabel("Generation")
-    plt.ylabel(f"Fitness ({loss_function})")
+    plt.ylabel(f"Fitness ({fitness_function_name})")
     plt.grid()
     plt.tight_layout()
     return plt.gcf()
@@ -355,7 +359,7 @@ def main():
 
     print("Training the model...")
     # set the fitness function and mutation rate
-    DNA.init_params(args.loss_function, args.mutation_rate, points)
+    DNA.init_params(args.fitness_function, args.mutation_rate, points)
 
     # train the model
     start_time = time.time()
@@ -382,7 +386,7 @@ def main():
     fitness_plot = visualize_fitness(
         f"Fitness over {args.generations} generations.",
         fitness_over_time,
-        args.loss_function,
+        args.fitness_function,
     )
     # show the plot
     plt.show()
@@ -390,7 +394,7 @@ def main():
     # save the fitness plot
     fitness_plot_path = Path("outputs") / (
         Path(args.image_path).stem
-        + f"_fitness_r{args.radius}_s{args.sequence_length}_p{args.population_size}_g{args.generations}_k{args.keep_percentile}_m{args.mutation_rate}_l{args.loss_function}.png"
+        + f"_fitness_r{args.radius}_s{args.sequence_length}_p{args.population_size}_g{args.generations}_k{args.keep_percentile}_m{args.mutation_rate}_l{args.fitness_function}.png"
     )
     fitness_plot.savefig(fitness_plot_path)
     print(f"Fitness plot saved at {fitness_plot_path}")
@@ -398,7 +402,7 @@ def main():
     # save the binary image
     output_path = args.output or Path("outputs") / (
         Path(args.image_path).stem
-        + f"_r{args.radius}_s{args.sequence_length}_p{args.population_size}_g{args.generations}_k{args.keep_percentile}_m{args.mutation_rate}_l{args.loss_function}.png"
+        + f"_r{args.radius}_s{args.sequence_length}_p{args.population_size}_g{args.generations}_k{args.keep_percentile}_m{args.mutation_rate}_l{args.fitness_function}.png"
     )
 
     cv.imwrite(str(output_path), best_dna.get_image_with_lines())
