@@ -25,7 +25,6 @@ def get_results(
     population_size: int,
     mutation_rate: float,
     keep_percentile: int,
-    number_of_generations: int,
     sequence_length: int,
     generations: int,
     verbose: bool = False,
@@ -36,9 +35,7 @@ def get_results(
     assert 0 < population_size, f"Invalid population size: {population_size}"
     assert 0 < mutation_rate < 1, f"Invalid mutation rate: {mutation_rate}"
     assert 0 < keep_percentile < 100, f"Invalid keep percentile: {keep_percentile}"
-    assert (
-        0 < number_of_generations
-    ), f"Invalid number of generations: {number_of_generations}"
+    assert 0 < generations, f"Invalid number of generations: {generations}"
     assert 0 < sequence_length, f"Invalid sequence length: {sequence_length}"
     assert 0 < generations, f"Invalid generations: {generations}"
 
@@ -151,7 +148,6 @@ if __name__ == "__main__":
         "fitness_function": default_fitness_function,
         # "mutation_rate": default_mutation_rate,
         "keep_percentile": default_keep_percentile,
-        "number_of_generations": default_number_of_generations,
         "sequence_length": default_sequence_length,
         "generations": default_number_of_generations,
     }
