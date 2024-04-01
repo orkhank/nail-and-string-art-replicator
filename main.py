@@ -8,12 +8,21 @@ from tqdm import tqdm
 from matplotlib import pyplot as plt
 import time
 from utils import (
+    draw_points_on_image,
+    get_points_on_image,
     simple_matching_coefficient,
     cosine_similarity,
     dice_similarity,
-    get_points_on_circle,
     read_binary_image,
+    visualize_fitness,
 )
+
+default_sequence_length = 50
+default_population_size = 100
+default_mutation_rate = 0.01
+default_number_of_generations = 1000
+default_fitness_function = "cosine"
+default_keep_percentile = 50
 
 
 class DNA:
@@ -162,12 +171,6 @@ class DNA:
 
 
 def get_args() -> argparse.Namespace:
-    default_sequence_length = 50
-    default_population_size = 100
-    default_mutation_rate = 0.01
-    default_number_of_generations = 1000
-    default_fitness_function = "cosine"
-    default_keep_percentile = 50
     parser = argparse.ArgumentParser(
         prog="Nail and String Art",
         description="Create nail and string art from an image",
@@ -233,11 +236,19 @@ def get_args() -> argparse.Namespace:
         f"Options are: {', '.join([f'{k} ({v})' for k, v in DNA.fitness_function_long_names.items()])}. "
         f"Default is {default_fitness_function}.",
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Print verbose output",
+    )
 
     return parser.parse_args()
 
 
-def get_initial_population(points, population_size, sequence_length, target_image):
+def get_initial_population(
+    points, population_size, sequence_length, target_image
+) -> list[DNA]:
     initial_population = []
     for _ in range(population_size):
         random_sequence = np.random.choice(list(points.keys()), sequence_length)
@@ -252,15 +263,23 @@ def train(
     keep_percentile: float,
     sequence_length: int,
     target_image: np.ndarray,
+    verbose: bool = True,
+    initial_population: Optional[list[DNA]] = None,
 ):
     assert (
         len(points) >= sequence_length
     ), "Number of points should be greater than or equal to the sequence length"
 
-    # create the initial population
-    population = get_initial_population(
-        points, population_size, sequence_length, target_image
-    )
+    if initial_population is None:
+        # create the initial population
+        population = get_initial_population(
+            points, population_size, sequence_length, target_image
+        )
+    else:
+        population = initial_population
+        assert (
+            len(population) == population_size
+        ), f"The initial population size is not correct: {len(population)} != {population_size}"
 
     # create the probabilities for selection
     probabilities = np.linspace(1, 0, population_size) / np.sum(
@@ -281,8 +300,8 @@ def train(
         # create the next generation
         for _ in range(crossover_count):
             # select two parents
-            parent1 = np.random.choice(population, p=probabilities)
-            parent2 = np.random.choice(population, p=probabilities)
+            parent1: DNA = np.random.choice(population, p=probabilities)  # type: ignore
+            parent2: DNA = np.random.choice(population, p=probabilities)  # type: ignore
 
             # crossover
             child1, child2 = DNA.crossover(parent1, parent2)
@@ -308,27 +327,13 @@ def train(
         fitness_over_time.append(best_dna.fitness())
 
         # print the fitness of the best DNA object
-        if generation % 100 == 0:
+        if verbose and generation % 100 == 0:
             print(f"\nGeneration: {generation}, Fitness: {best_dna.fitness()}")
             best_dna.visualize(
                 f"Generation {generation}, Fitness: {best_dna.fitness()}", wait=500
             )
 
     return best_dnas, fitness_over_time
-
-
-def visualize_fitness(
-    title: str,
-    fitness_over_time: list[float],
-    fitness_function_name: str,
-):
-    plt.plot(fitness_over_time)
-    plt.title(title)
-    plt.xlabel("Generation")
-    plt.ylabel(f"Fitness ({fitness_function_name})")
-    plt.grid()
-    plt.tight_layout()
-    return plt.gcf()
 
 
 def main():
@@ -340,22 +345,18 @@ def main():
     # Read the image as binary black and white
     image = read_binary_image(args.image_path)
 
-    # get center of the image
-    height, width = image.shape[:2]
-    center = (width // 2, height // 2)
+    # get the points on the image
+    points = get_points_on_image(image, args.radius)
 
-    # get points on the circle
-    points = get_points_on_circle(center, args.radius)
+    if args.verbose:
+        # draw the points on the image
+        image_with_points = draw_points_on_image(image, points)
 
-    # draw the points on the image
-    image_with_points = image.copy()
-    for point in points.values():
-        cv.circle(image_with_points, point, 1, (0, 0, 0), 1)
-
-    # show the image on a plot
-    plt.imshow(image_with_points, cmap="gray")
-    plt.title("Image with Points")
-    plt.show()
+        # show the image with points
+        plt.imshow(image_with_points, cmap="gray")
+        plt.title("Image with Points")
+        plt.show()
+        plt.close()
 
     print("Training the model...")
     # set the fitness function and mutation rate
@@ -370,6 +371,7 @@ def main():
         args.keep_percentile,
         args.sequence_length,
         image,
+        args.verbose,
     )
     end_time = time.time()
     train_time = end_time - start_time
