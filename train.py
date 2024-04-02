@@ -94,7 +94,7 @@ def train(
         if verbose and generation % 100 == 0:
             print(f"\nGeneration: {generation}, Fitness: {best_dna.fitness()}")
             best_dna.visualize(
-                f"Generation {generation}, Fitness: {best_dna.fitness()}", wait=500
+                f"Generation {generation}, Fitness: {best_dna.fitness()}", wait=0.5
             )
 
     return best_dnas, fitness_over_time

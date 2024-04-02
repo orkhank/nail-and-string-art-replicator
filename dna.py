@@ -184,10 +184,12 @@ class DNA:
         assert cls.points is not None, "Points are not set"
         return cls.points[name]
 
-    def visualize(self, title: str = "DNA", wait: int = 0):
-        # show the image
+    def visualize(self, title: str = "DNA", wait: float = 1):
+        # show the image using axis and figure
+        plt.figure()
         plt.imshow(self.get_image_with_lines(), cmap="gray")
         plt.title(title)
+        plt.axis("off")
         plt.show(block=False)
-        plt.pause(wait / 1000)
+        plt.pause(wait)
         plt.close()
