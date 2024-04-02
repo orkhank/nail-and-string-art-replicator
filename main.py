@@ -13,6 +13,7 @@ from utils import (
     visualize_fitness,
 )
 
+# Default values for the arguments
 default_sequence_length = 50
 default_population_size = 100
 default_mutation_rate = 0.01
@@ -140,10 +141,13 @@ def main(args: argparse.Namespace):
     print(f"Training time: {train_time:.2f} seconds")
 
     # get the best DNA
-    best_dna = best_dnas[-1]
+    best_dna: DNA = best_dnas[-1]
 
     # print details of the best DNA
     print(f"Best sequence found (fitness: {best_dna.fitness()}): {best_dna.sequence}")
+    if args.verbose:
+        # show the best DNA
+        best_dna.visualize(f"Best Sequence (Fitness: {best_dna.fitness()})", wait=0)
 
     # visualize the fitness over generations
     fitness_plot = visualize_fitness(
@@ -153,9 +157,8 @@ def main(args: argparse.Namespace):
     )
 
     if args.verbose:
-        # show the best DNA and fitness plot
-        best_dna.visualize(f"Best Sequence (Fitness: {best_dna.fitness()})", wait=0)
         plt.show()
+        plt.close()
 
     # save the output image
     if args.output:
