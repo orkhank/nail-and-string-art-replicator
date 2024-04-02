@@ -1,7 +1,5 @@
-# TODO: clean up the code and COMMENTS
 import argparse
 from pathlib import Path
-import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt
 import time
