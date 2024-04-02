@@ -2,6 +2,7 @@ from itertools import product
 import json
 import cv2 as cv
 import time
+from matplotlib import pyplot as plt
 import numpy as np
 from main import (
     train,
@@ -15,7 +16,12 @@ from main import (
 )
 from pathlib import Path
 
-from utils import get_points_on_image, read_binary_image, visualize_fitness
+from utils import (
+    get_points_on_image,
+    read_binary_image,
+    visualize_fitness,
+    save_train_results,
+)
 
 
 def get_results(
@@ -81,44 +87,21 @@ def get_results(
         fitness_function,
     )
 
-    base_output_path = Path("outputs")
-    # save the fitness plot
-    image_output_name = Path(
-        Path(image_path).stem
-        + f"_r{radius}_s{sequence_length}_p{population_size}_g{generations}_k{keep_percentile}_m{mutation_rate}_f{fitness_function}.png"
+    # save the results
+    save_train_results(
+        fitness_plot,
+        best_dna,
+        train_time,
+        base_output_path=Path("outputs"),
+        image_name=image_path.stem,
+        r=radius,
+        f=fitness_function,
+        p=population_size,
+        m=mutation_rate,
+        k=keep_percentile,
+        s=sequence_length,
+        g=generations,
     )
-    fitness_plot_path = base_output_path / "fitness_plots" / image_output_name
-    # make the directory if it does not exist
-    fitness_plot_path.parent.mkdir(parents=True, exist_ok=True)
-    fitness_plot.savefig(fitness_plot_path)
-    print(f"Fitness plot saved at {fitness_plot_path}")
-
-    # save the binary image
-    output_path = base_output_path / "output_images" / image_output_name
-    # make the directory if it does not exist
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    cv.imwrite(str(output_path), best_dna.get_image_with_lines())
-    print(f"Output image saved at {output_path}")
-
-    # save the best DNA, its fitness and the training time
-    other_output_path = (
-        base_output_path / "other_outputs" / image_output_name.with_suffix(".json")
-    )
-    # make the directory if it does not exist
-    other_output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(other_output_path, "w") as f:
-        json.dump(
-            {
-                "fitness": best_dna.fitness(),
-                "sequence": best_dna.sequence.tolist(),
-                "training_time": train_time,
-            },
-            f,
-            indent=4,
-        )
-
-    print(f"Other output saved at {other_output_path}")
 
     return best_dna, fitness_over_time, train_time
 

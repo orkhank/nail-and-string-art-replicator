@@ -1,70 +1,11 @@
+import json
+from pathlib import Path
 import cv2 as cv
 from matplotlib import pyplot as plt
 import numpy as np
+from matplotlib.figure import Figure
 
-
-def simple_matching_coefficient(image1, image2) -> float:
-    """
-    Simple matching coefficient metric.
-
-    Args:
-        image1 (np.ndarray): Binary black and white image.
-        image2 (np.ndarray): Binary black and white image.
-
-    Returns:
-        float: The amount of pixels that are the same in both images divided by the total amount of pixels.
-    """
-    assert image1.shape == image2.shape
-    return np.count_nonzero(image1 == image2) / image1.size
-
-
-def dice_similarity(image1, image2) -> float:
-    """
-    Dice similarity metric.
-
-    Args:
-        image1 (np.ndarray): Binary black and white image.
-        image2 (np.ndarray): Binary black and white image.
-
-    Returns:
-        float: Dice similarity metric.
-    """
-
-    assert image1.shape == image2.shape
-
-    a, b, c = get_a_b_c(image1, image2)
-    return 2 * c / (a + b)
-
-
-def cosine_similarity(image1, image2) -> float:
-    """
-    Cross-correlation similarity metric.
-    Args:
-        image1 (np.ndarray): Binary black and white image.
-        image2 (np.ndarray): Binary black and white image.
-
-    Returns:
-        float: Cross-correlation similarity metric.
-    """
-
-    assert image1.shape == image2.shape
-
-    a, b, c = get_a_b_c(image1, image2)
-    return c / np.sqrt(a * b)
-
-
-def get_points_on_circle(
-    center: tuple[int, int], radius: int, num_points: int = 360
-) -> dict[int, tuple[int, int]]:
-    points = []
-    for i in range(num_points):
-        angle = 2 * np.pi * i / num_points
-        x = center[0] + radius * np.cos(angle)
-        y = center[1] + radius * np.sin(angle)
-        points.append((int(x), int(y)))
-
-    named_points = {i + 1: point for i, point in enumerate(points)}
-    return named_points
+from dna import DNA
 
 
 def read_binary_image(image_path: str) -> np.ndarray:
@@ -100,6 +41,20 @@ def get_points_on_image(
     return points
 
 
+def get_points_on_circle(
+    center: tuple[int, int], radius: int, num_points: int = 360
+) -> dict[int, tuple[int, int]]:
+    points = []
+    for i in range(num_points):
+        angle = 2 * np.pi * i / num_points
+        x = center[0] + radius * np.cos(angle)
+        y = center[1] + radius * np.sin(angle)
+        points.append((int(x), int(y)))
+
+    named_points = {i + 1: point for i, point in enumerate(points)}
+    return named_points
+
+
 def visualize_fitness(
     title: str,
     fitness_over_time: list[float],
@@ -115,46 +70,62 @@ def visualize_fitness(
     return plt.gcf()
 
 
-def get_important_color(image) -> tuple[int, int]:
+def save_train_results(
+    fitness_plot: Figure,
+    best_dna: DNA,
+    train_time: float,
+    *,
+    base_output_path: Path = Path("outputs"),
+    image_name: str,
+    **kwargs,
+):
     """
-    Get the majority color of a binary black and white image.
+    Save the results of the training.
 
     Args:
-        image (np.ndarray): Binary black and white image.
-
-    Returns:
-        tuple[int, int]: Minority color and its count.
-
+        fitness_plot (Figure): Fitness plot.
+        best_dna (DNA): Best DNA object.
+        train_time (float): Training time in seconds.
+        base_output_path (Path): Base output path.
+        image_name (str): Name of the reference image.
+        **kwargs: Hyperparameters used for training.
     """
 
-    white = 255
-    black = 0
-    white_count = np.sum(image == white)
-    black_count = np.sum(image == black)
-    if white_count > black_count:
-        return black, black_count
-    return white, white_count
+    # save the fitness plot
+    image_output_name = Path(
+        image_name
+        + f"_{'_'.join([f'{key}{value}' for key, value in sorted(list(kwargs.items()), key=lambda x: x[0])])}.png"
+    )
+    fitness_plot_path = base_output_path / "fitness_plots" / image_output_name
+    # make the directory if it does not exist
+    fitness_plot_path.parent.mkdir(parents=True, exist_ok=True)
+    fitness_plot.savefig(fitness_plot_path)
+    print(f"Fitness plot saved at {fitness_plot_path}")
 
+    # save the binary image
+    output_path = base_output_path / "output_images" / image_output_name
+    # make the directory if it does not exist
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-def get_a_b_c(image, target_image) -> tuple[int, int, int]:
-    """
-    Get the a, b, c values for the matching coefficient metrics based on the important color.
+    cv.imwrite(str(output_path), best_dna.get_image_with_lines())
+    print(f"Output image saved at {output_path}")
 
-    Args:
-        image (np.ndarray): Binary black and white image.
-        target_image (np.ndarray): Binary black and white image.
-
-    Returns:
-        tuple[int, int, int]: a, b, c values.
-    """
-    assert image.shape == target_image.shape
-
-    important_pixel = get_important_color(target_image)[0]
-
-    a = np.count_nonzero(image == important_pixel)
-    b = np.count_nonzero(target_image == important_pixel)
-    c = np.count_nonzero(
-        np.logical_and(image == important_pixel, target_image == important_pixel)
+    # save the best DNA, its fitness and the training time
+    other_output_path = (
+        base_output_path / "other_outputs" / image_output_name.with_suffix(".json")
     )
 
-    return a, b, c
+    # make the directory if it does not exist
+    other_output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(other_output_path, "w") as f:
+        json.dump(
+            {
+                "fitness": best_dna.fitness(),
+                "sequence": best_dna.sequence.tolist(),
+                "training_time": train_time,
+            },
+            f,
+            indent=4,
+        )
+
+    print(f"Other output saved at {other_output_path}")
