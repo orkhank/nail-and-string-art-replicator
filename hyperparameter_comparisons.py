@@ -1,8 +1,6 @@
 from itertools import product
 import json
-import cv2 as cv
 import time
-from matplotlib import pyplot as plt
 import numpy as np
 from main import (
     train,

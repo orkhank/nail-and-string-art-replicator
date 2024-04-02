@@ -51,8 +51,6 @@ def cosine_similarity(image1, image2) -> float:
     return c / np.sqrt(a * b)
 
 
-
-
 def get_a_b_c(image, target_image) -> tuple[int, int, int]:
     """
     Get the a, b, c values for the matching coefficient metrics based on the important color.
