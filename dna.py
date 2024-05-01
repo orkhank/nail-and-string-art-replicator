@@ -3,6 +3,7 @@ from typing import Callable, Union, Optional
 import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
+import functools
 
 from fitness_functions import (
     cosine_similarity,
@@ -112,6 +113,7 @@ class DNA:
 
         return image_with_lines
 
+    @functools.lru_cache(maxsize=200)
     def fitness(self) -> float:
         """
         Calculate the fitness of the DNA object
@@ -175,11 +177,13 @@ class DNA:
         return child1, child2
 
     @classmethod
+    @functools.lru_cache(maxsize=1)
     def get_possible_point_names(cls) -> list[int]:
         assert cls.points is not None, "Points are not set"
         return list(cls.points.keys())
 
     @classmethod
+    @functools.lru_cache
     def get_point(cls, name: int) -> tuple[int, int]:
         assert cls.points is not None, "Points are not set"
         return cls.points[name]
